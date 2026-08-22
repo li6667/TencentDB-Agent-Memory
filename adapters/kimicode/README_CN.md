@@ -11,6 +11,12 @@
 type = "openai_legacy"
 base_url = "http://127.0.0.1:8096/codebuddy/default"
 api_key = "sk-tdai-replace-me"
+custom_headers = {
+  x-team-id = "team-replace-me",
+  x-agent-id = "agent-replace-me",
+  x-task-id = "task-replace-me",
+  x-conversation-id = "conversation-replace-me"
+}
 
 [models.deepseek-v4-flash]
 provider = "tencentdb-memory"
@@ -24,6 +30,15 @@ capabilities = ["thinking"]
 
 模型名必须与 MemoryProxy 的 `PROXY_UPSTREAM_MODEL` 一致。本示例使用现有 OpenAI-compatible 路由；如果后续 Proxy 增加专用 `/kimicode/<spaceId>` 路由，只需修改 `base_url`。
 
+`custom_headers` 遵循 TencentDB 对 Hermes/OpenClaw 等通用 OpenAI 客户端的接入约定：
+
+- `x-team-id`：Team ID；
+- `x-agent-id`：Agent ID；
+- `x-task-id`：Task ID（当前版本必填）；
+- `x-conversation-id`：当前会话标识。新建会话时生成一个新的值，继续同一会话时保持不变。
+
+这些值不应写成全局固定业务资产；实际使用时由启动脚本、工作区配置或客户端包装层按会话注入。Kimi Code 当前版本没有把内部 session ID 自动转换为 TencentDB header，因此本适配采用官方通用客户端的显式 header 方式。
+
 ## 能力
 
 首次请求经过 MemoryProxy 时，可以按代理配置完成 Team、Agent、Task 绑定；后续请求使用绑定的记忆上下文，完成的对话按 Proxy 配置回写 MemoryCore。
@@ -36,16 +51,17 @@ capabilities = ["thinking"]
 - Kimi Code CLI 必须通过该 Provider 发送 OpenAI Chat Completions 请求。
 - Kimi Code 和 MemoryProxy 两侧的模型名称必须一致。
 - Kimi Code 平台专属的搜索/抓取服务不会由 TencentDB 上游自动提供，需要单独配置或使用本地回退。
+- Kimi Code 当前不会自动转发内部 session ID；必须通过 `custom_headers.x-conversation-id` 提供会话标识。
 - 本目录不包含完整会话的额外存储，也不修改 Kimi Code、TencentDB Core 或 MemoryProxy 源码。
 
 ## 验证步骤
 
 1. 启动 MemoryCore 和 MemoryProxy。
 2. 准备一个能访问 Team 和 Agent 的 TencentDB 用户 Key。
-3. 设置 `TENCENTDB_MEMORY_API_KEY` 并启动 Kimi Code CLI。
-4. 新建会话，按代理提示完成 Team → Agent → Task 选择（如果启用了 session init）。
-5. 发送一条消息，确认流式响应正常，并在 MemoryCore Chat Memory 中查看回写内容。
-6. 新开会话，验证相关记忆可以被召回，且未泄露其他用户数据。
+3. 将 TencentDB user key、Team/Agent/Task ID 写入 `custom_headers`，为当前会话生成唯一 `x-conversation-id`。
+4. 启动 Kimi Code CLI 并发送一条消息，确认流式响应正常。
+5. 在 MemoryCore Chat Memory 中确认该会话回写内容。
+6. 新建会话时只更换 `x-conversation-id`；切换任务时同步更换 Team/Agent/Task headers。
 
 ## 与 MCP 适配的关系
 

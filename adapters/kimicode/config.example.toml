@@ -5,6 +5,12 @@
 type = "openai_legacy"
 base_url = "http://127.0.0.1:8096/codebuddy/default"
 api_key = "sk-tdai-replace-me"
+custom_headers = {
+  x-team-id = "team-replace-me",
+  x-agent-id = "agent-replace-me",
+  x-task-id = "task-replace-me",
+  x-conversation-id = "conversation-replace-me"
+}
 
 [models.deepseek-v4-flash]
 provider = "tencentdb-memory"

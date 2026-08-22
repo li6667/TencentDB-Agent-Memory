@@ -13,6 +13,12 @@ Edit `~/.kimi/config.toml`:
 type = "openai_legacy"
 base_url = "http://127.0.0.1:8096/codebuddy/default"
 api_key = "sk-tdai-replace-me"
+custom_headers = {
+  x-team-id = "team-replace-me",
+  x-agent-id = "agent-replace-me",
+  x-task-id = "task-replace-me",
+  x-conversation-id = "conversation-replace-me"
+}
 
 [models.deepseek-v4-flash]
 provider = "tencentdb-memory"
@@ -26,6 +32,15 @@ The `default` path segment is the MemoryProxy memory instance/space ID used by t
 
 The model ID must match the model configured by MemoryProxy (`PROXY_UPSTREAM_MODEL`). The proxy route is OpenAI-compatible; the route name is retained for compatibility with the current MemoryProxy route table. If a dedicated `/kimicode/<spaceId>` route is added upstream, only `base_url` needs to change.
 
+The `custom_headers` follow TencentDB's generic OpenAI-client convention used by integrations such as Hermes and OpenClaw:
+
+- `x-team-id`: Team ID;
+- `x-agent-id`: Agent ID;
+- `x-task-id`: Task ID (required by the current Proxy version);
+- `x-conversation-id`: the current conversation identifier. Generate a new value for a new conversation and keep it stable when resuming one.
+
+These values should be injected per workspace/session rather than hard-coded as one global task. The current Kimi Code release does not automatically translate its internal session ID into TencentDB headers, so this adapter uses the same explicit-header approach as the generic Hermes/OpenClaw integrations.
+
 ## What this provides
 
 After the first request, MemoryProxy can perform its normal session initialization and bind the Kimi Code session to a Team, Agent, and optional Task. Subsequent turns can receive the bound memory context, and completed turns are written back to MemoryCore according to the proxy extraction configuration.
@@ -37,6 +52,7 @@ This adapter is configuration-only. It does not modify Kimi Code, TencentDB Core
 - This integration requires a running TencentDB MemoryProxy and MemoryCore Gateway.
 - Kimi Code must send OpenAI Chat Completions requests through the configured provider.
 - The model name must be identical on the Kimi Code and MemoryProxy sides.
+- Kimi Code does not currently forward its internal session ID automatically; `custom_headers.x-conversation-id` is required.
 - Kimi Code CLI's platform-specific search/fetch services are not provided by the TencentDB upstream; use Kimi Code's local fallback or configure those services separately.
 - This directory does not duplicate the shared MCP/Gateway client implementation from the existing Kimi Code MCP adapter.
 
@@ -44,10 +60,10 @@ This adapter is configuration-only. It does not modify Kimi Code, TencentDB Core
 
 1. Start MemoryCore and MemoryProxy.
 2. Create or select a TencentDB user key with access to at least one Team and Agent.
-3. Export `TENCENTDB_MEMORY_API_KEY` and start Kimi Code CLI.
-4. Start a new Kimi Code session and complete the Team → Agent → Task selection if enabled by the proxy.
-5. Send a prompt, confirm the streamed answer, and verify the turn in MemoryCore Chat Memory.
-6. Start a second session and verify that relevant memory is recalled without sharing credentials or changing Kimi Code source.
+3. Set the TencentDB user key and the Team/Agent/Task IDs in `custom_headers`, generating a unique `x-conversation-id` for the current session.
+4. Start Kimi Code CLI and send a prompt, confirming the streamed answer.
+5. Verify the turn in MemoryCore Chat Memory.
+6. For a new session, change only `x-conversation-id`; when switching tasks, update the Team/Agent/Task headers as well.
 
 ## 中文说明
 
