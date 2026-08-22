@@ -58,6 +58,22 @@ capabilities = ["thinking"]
 5. 在 MemoryCore Chat Memory 中确认该会话回写内容。
 6. 新建会话时只更换 `x-conversation-id`；切换任务时同步更换 Team/Agent/Task headers。
 
+## 本地验证结果
+
+本适配已在 Windows 本地完成端到端验证：
+
+| 检查项 | 结果 |
+|---|---|
+| Kimi Code 配置解析 | 通过（`kimi doctor config`） |
+| `openai_legacy` 请求构造 | 通过 |
+| MemoryProxy OpenAI-compatible 路由 | 通过（HTTP 200） |
+| DeepSeek 上游转发 | 通过（返回测试响应） |
+| TencentDB session 初始化 | 通过 |
+| Team/Agent/Task 绑定 | 通过（`default-team` / Kimi Code / Memory Write Test） |
+| TencentDB L0 回流 | 通过（`tdai-recorder:write-l0`） |
+
+配置示例 TOML 通过 Python `tomllib` 解析校验。测试使用的 API Key、user key 和本地部署文件均未加入仓库。
+
 ## 与 MCP 适配的关系
 
 仓库中已有 Kimi Code MCP 适配讨论。本示例走的是 Kimi Code 官方 `openai_legacy` Provider + MemoryProxy 路线，重点是配置级、透明的模型 API 接入；公共 MCP/Gateway 客户端能力不在此目录重复实现。

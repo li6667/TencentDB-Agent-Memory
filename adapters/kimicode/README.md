@@ -60,6 +60,22 @@ This adapter is configuration-only. It does not modify Kimi Code, TencentDB Core
 5. Verify the turn in MemoryCore Chat Memory.
 6. For a new session, change only `x-conversation-id`; when switching tasks, update the Team/Agent/Task headers as well.
 
+## Local verification results
+
+The integration was verified end-to-end in a local Windows environment:
+
+| Check | Result |
+|---|---|
+| Kimi Code configuration parsing | Passed (`kimi doctor config`) |
+| `openai_legacy` request construction | Passed |
+| MemoryProxy OpenAI-compatible route | Passed (HTTP 200) |
+| DeepSeek upstream forwarding | Passed (test response returned) |
+| TencentDB session initialization | Passed |
+| Team/Agent/Task binding | Passed (`default-team` / Kimi Code / Memory Write Test) |
+| TencentDB L0 write-back | Passed (`tdai-recorder:write-l0`) |
+
+The example TOML was validated with Python `tomllib`. No API keys, user keys, or local deployment files are included in this repository.
+
 ## 中文说明
 
 本适配通过 Kimi Code CLI 官方支持的 `openai_legacy` 自定义 Provider，将请求发送到 TencentDB MemoryProxy。用户只需配置 `base_url` 和 TencentDB 用户 Key，不需要修改 Kimi Code 源码或安装插件。详细中文说明见 [README_CN.md](./README_CN.md)。
